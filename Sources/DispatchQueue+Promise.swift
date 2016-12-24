@@ -12,17 +12,14 @@ extension DispatchQueue {
 
      - Parameter body: The closure that resolves this promise.
      - Returns: A new promise resolved by the result of the provided closure.
-
      - SeeAlso: `DispatchQueue.async(group:qos:flags:execute:)`
-     - SeeAlso: `dispatch_promise()`
-     - SeeAlso: `dispatch_promise_on()`
      */
-    public final func promise<T>(group: DispatchGroup? = nil, qos: DispatchQoS = .default, flags: DispatchWorkItemFlags = [], execute body: @escaping () throws -> T) -> Promise<T> {
+    public final func promise<P: PromiseConvertible>(group: DispatchGroup? = nil, qos: DispatchQoS = .default, flags: DispatchWorkItemFlags = [], execute body: @escaping () throws -> P) -> Promise<P.Value> {
 
         return Promise(sealant: { resolve in
             async(group: group, qos: qos, flags: flags) {
                 do {
-                    resolve(.fulfilled(try body()))
+                    try body().promise.state.pipe(resolve)
                 } catch {
                     resolve(Resolution(error))
                 }
@@ -30,15 +27,12 @@ extension DispatchQueue {
         })
     }
 
-    /// Unavailable due to Swift compiler issues
-    @available(*, unavailable)
-    public final func promise<T>(group: DispatchGroup? = nil, qos: DispatchQoS = .default, flags: DispatchWorkItemFlags = [], execute body: () throws -> Promise<T>) -> Promise<T> { fatalError() }
-
     /**
      The default queue for all handlers.
 
      Defaults to `DispatchQueue.main`.
 
+     - Important: Must be set before *any* other PromiseKit function.
      - SeeAlso: `PMKDefaultDispatchQueue()`
      - SeeAlso: `PMKSetDefaultDispatchQueue()`
      */

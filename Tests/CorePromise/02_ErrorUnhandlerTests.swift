@@ -33,11 +33,7 @@ class ErrorUnhandlerTests: XCTestCase {
             InjectedErrorUnhandler = { err in
                 XCTFail()
             }
-            _ = promise.recover { error -> Promise<Int> in
-                return Promise(value: 1)
-            }.always {
-                ex.fulfill()
-            }
+            _ = promise.recover { _ in 1 }.ensure(that: ex.fulfill)
         }
     }
 
@@ -57,8 +53,8 @@ class ErrorUnhandlerTests: XCTestCase {
             InjectedErrorUnhandler = { err in
                 ex.fulfill()
             }
-            promise.recover { error -> Promise<Int> in
-                firstly { throw Error.dummy }
+            promise.recover { _ -> Promise<Int> in
+                firstly { _ -> Int in throw Error.dummy }
             }
         }
     }
@@ -72,9 +68,9 @@ class ErrorUnhandlerTests: XCTestCase {
             }
             promise.recover { error -> Int in
                 throw error
-            }.then { x in
+            }.done { _ in
                 XCTFail()
-            }.always {
+            }.ensure {
                 ex1.fulfill()
             }.catch { err in
                 ex2.fulfill()
@@ -98,14 +94,14 @@ class ErrorUnhandlerTests: XCTestCase {
         let ex3 = expectation(description: "")
         let ex4 = expectation(description: "")
 
-        after(interval: 0.1).then { _ -> Void in r(Error.test); ex1.fulfill() }
-        after(interval: 0.15).then { _ -> Void in r(Error.test); ex2.fulfill() }.always(execute: ex3.fulfill)
+        after(interval: 0.10).done { r(Error.test); ex1.fulfill() }
+        after(interval: 0.15).done { r(Error.test); ex2.fulfill() }.ensure(that: ex3.fulfill)
 
         p.catch { error in
             ex4.fulfill()
         }
 
-        waitForExpectations(timeout: 1, handler: nil)
+        waitForExpectations(timeout: 1)
     }
 
     func testPassThrough() {
@@ -120,12 +116,12 @@ class ErrorUnhandlerTests: XCTestCase {
         }
 
         Promise<Void> { _, reject in
-            after(interval: 0.1).then {
+            after(interval: 0.1).done {
                 throw Error.test
-            }.catch(execute: reject)
+            }.catch(handler: reject)
         }
 
-        waitForExpectations(timeout: 1, handler: nil)
+        waitForExpectations(timeout: 1)
     }
 
     func testConsumedPromiseStaysConsumedAsAnyPromise() {
@@ -139,7 +135,7 @@ class ErrorUnhandlerTests: XCTestCase {
 
         let ex1 = expectation(description: "")
 
-        let p: Promise<Int> = firstly {
+        let p: Promise<Int> = firstly { _ -> Int in
             throw Error.test
         }
 
@@ -159,7 +155,7 @@ class ErrorUnhandlerTests: XCTestCase {
 
 //MARK: helpers
 
-    private func twice(body: @noescape (Promise<Int>, XCTestExpectation) -> Void) {
+    private func twice(body: (Promise<Int>, XCTestExpectation) -> Void) {
         autoreleasepool {
             let ex = expectation(description: "Sealed")
             body(Promise<Int>(error: Error.dummy), ex)

@@ -3,23 +3,23 @@ import XCTest
 
 class JointTests: XCTestCase {
     func testPiping() {
-        let (promise, joint) = Promise<Int>.joint()
+        let (promise, joint) = Promise<Int>.pending()
 
         XCTAssert(promise.isPending)
 
-        let foo = Promise(value: 3)
-        foo.join(joint)
+        let foo = Promise(3)
+        foo.weld(to: joint)
 
         XCTAssertEqual(3, promise.value)
     }
 
     func testPipingPending() {
-        let (promise, joint) = Promise<Int>.joint()
+        let (promise, joint) = Promise<Int>.pending()
 
         XCTAssert(promise.isPending)
 
         let (foo, fulfillFoo, _) = Promise<Int>.pending()
-        foo.join(joint)
+        foo.weld(to: joint)
 
         fulfillFoo(3)
 
@@ -29,10 +29,10 @@ class JointTests: XCTestCase {
     func testCallback() {
         let ex = expectation(description: "")
 
-        let (promise, joint) = Promise<Void>.joint()
-        promise.then { ex.fulfill() }
+        let (promise, joint) = Promise<Void>.pending()
+        promise.done { ex.fulfill() }
 
-        Promise(value: ()).join(joint)
+        Promise().weld(to: joint)
 
         waitForExpectations(timeout: 1)
     }
@@ -40,11 +40,11 @@ class JointTests: XCTestCase {
     func testCallbackPending() {
         let ex = expectation(description: "")
 
-        let (promise, joint) = Promise<Void>.joint()
-        promise.then { ex.fulfill() }
+        let (promise, joint) = Promise<Void>.pending()
+        promise.done { ex.fulfill() }
 
         let (foo, fulfillFoo, _) = Promise<Void>.pending()
-        foo.join(joint)
+        foo.weld(to: joint)
 
         fulfillFoo()
 

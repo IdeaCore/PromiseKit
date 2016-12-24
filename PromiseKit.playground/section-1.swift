@@ -1,14 +1,22 @@
 import PlaygroundSupport
 import PromiseKit
 
+enum E: Error {
+    case e
+}
+
 firstly {
-    Promise(value: 1)
+    Promise(1)
 }.then { _ in
-    2
-}.then { _ in
-    3
+    arc4random_uniform(2)
+}.then { rnd -> Int in
+    if rnd == 0 {
+        return 1
+    } else {
+        throw E.e
+    }
 }.catch { error in
-    // never happens!
+    print(error)
 }
 
 PlaygroundPage.current.needsIndefiniteExecution = true

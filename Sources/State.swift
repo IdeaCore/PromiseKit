@@ -56,15 +56,23 @@ class State<T> {
         }
     }
 
-    final func always(on q: DispatchQueue, body: @escaping (Resolution<T>) -> Void) {
+    final func `catch`(on q: DispatchQueue, policy: CatchPolicy, execute body: @escaping (Error) -> Void) {
         pipe { resolution in
-            contain_zalgo(q) {
-                body(resolution)
+            switch (resolution, policy) {
+            case (.fulfilled, _):
+                break
+            case (.rejected(let error, _), .allErrorsExceptCancellation) where error.isCancelledError:
+                break
+            case (let .rejected(error, token), _):
+                contain_zalgo(q) {
+                    token.consumed = true
+                    body(error)
+                }
             }
         }
     }
 
-    final func `catch`(on q: DispatchQueue, policy: CatchPolicy, else resolve: @escaping (Resolution<T>) -> Void, execute body: @escaping (Error) throws -> Void) {
+    final func recover(on q: DispatchQueue, policy: CatchPolicy, else resolve: @escaping (Resolution<T>) -> Void, execute body: @escaping (Error) throws -> Void) {
         pipe { resolution in
             switch (resolution, policy) {
             case (.fulfilled, _):
@@ -146,14 +154,14 @@ class UnsealedState<T>: State<T> {
 #if !PMKDisableWarnings
     deinit {
         if case .pending = seal {
-            NSLog("PromiseKit: Pending Promise deallocated! This is usually a bug")
+            NSLog("PromiseKit: Pending `Promise` deallocated! This is *usually* a bug!")
         }
     }
 #endif
 }
 
 class SealedState<T>: State<T> {
-    fileprivate let resolution: Resolution<T>
+    let resolution: Resolution<T>
     
     init(resolution: Resolution<T>) {
         self.resolution = resolution
@@ -182,38 +190,5 @@ class Handlers<T>: Sequence {
 
     var count: Int {
         return bodies.count
-    }
-}
-
-
-extension Resolution: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .fulfilled(let value):
-            return "Fulfilled with value: \(value)"
-        case .rejected(let error):
-            return "Rejected with error: \(error)"
-        }
-    }
-}
-
-extension UnsealedState: CustomStringConvertible {
-    var description: String {
-        var rv: String!
-        get { seal in
-            switch seal {
-            case .pending(let handlers):
-                rv = "Pending with \(handlers.count) handlers"
-            case .resolved(let resolution):
-                rv = "\(resolution)"
-            }
-        }
-        return "UnsealedState: \(rv)"
-    }
-}
-
-extension SealedState: CustomStringConvertible {
-    var description: String {
-        return "SealedState: \(resolution)"
     }
 }

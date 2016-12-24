@@ -17,9 +17,9 @@ extension XCTestCase {
         }
     }
 
-    func specify(_ description: String, file: StaticString = #file, line: UInt = #line, body: (Promise<Void>.PendingTuple, XCTestExpectation) throws -> Void) {
+    func specify(_ description: String, file: StaticString = #file, line: UInt = #line, body: (Promise<Void>.Pending, XCTestExpectation) throws -> Void) {
         let expectation = self.expectation(description: description)
-        let pending = Promise<Void>.pending()
+        let pending: Promise<Void>.Pending = Promise<Void>.pending()
 
         do {
             try body(pending, expectation)
@@ -50,7 +50,7 @@ extension XCTestCase {
         let specify = mkspecify(withExpectationCount, file: file, line: line, body: body)
 
         specify("already-fulfilled") { value in
-            return (Promise(value: value), {})
+            return (Promise(value), {})
         }
         specify("immediately-fulfilled") { value in
             let (promise, fulfill, _) = Promise<UInt32>.pending()

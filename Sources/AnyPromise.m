@@ -54,16 +54,24 @@ NSString *const PMKErrorDomain = @"PMKErrorDomain";
     };
 }
 
-- (AnyPromise *(^)(dispatch_block_t))always {
+- (AnyPromise *(^)(dispatch_block_t))ensure {
     return ^(dispatch_block_t block) {
-        return [self __alwaysOn:PMKDefaultDispatchQueue() execute:block];
+        return [self __ensureOn:PMKDefaultDispatchQueue() execute:block];
     };
 }
 
-- (AnyPromise *(^)(dispatch_queue_t, dispatch_block_t))alwaysOn {
+- (AnyPromise *(^)(dispatch_queue_t, dispatch_block_t))ensureOn {
     return ^(dispatch_queue_t queue, dispatch_block_t block) {
-        return [self __alwaysOn:queue execute:block];
+        return [self __ensureOn:queue execute:block];
     };
+}
+
+- (BOOL)pending {
+    return [self valueForKey:@"__value"] == nil;
+}
+
+- (BOOL)resolved {
+    return !self.pending;
 }
 
 @end

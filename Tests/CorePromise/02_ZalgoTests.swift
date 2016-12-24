@@ -4,14 +4,14 @@ import PromiseKit
 class ZalgoTests: XCTestCase {
     func test1() {
         var resolved = false
-        Promise(value: 1).then(on: zalgo) { _ in
+        Promise(1).done(on: zalgo) { _ in
             resolved = true
         }
         XCTAssertTrue(resolved)
     }
 
     func test2() {
-        let p1 = Promise(value: 1).then(on: zalgo) { x in
+        let p1 = Promise(1).then(on: zalgo) { x in
             return 2
         }
         XCTAssertEqual(p1.value!, 2)
@@ -19,7 +19,7 @@ class ZalgoTests: XCTestCase {
         var x = 0
         
         let (p2, f, _) = Promise<Int>.pending()
-        p2.then(on: zalgo) { _ in
+        p2.done(on: zalgo) { _ in
             x = 1
         }
         XCTAssertEqual(x, 0)
@@ -51,7 +51,7 @@ class ZalgoTests: XCTestCase {
     // return a sealed promise from its own zalgo’d then handler doesn’t hang
     func test4() {
         let ex = expectation(description: "")
-        let p1 = Promise(value: 1)
+        let p1 = Promise(1)
         p1.then(on: zalgo) { _ -> Promise<Int> in
             ex.fulfill()
             return p1

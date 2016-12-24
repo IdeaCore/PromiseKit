@@ -108,7 +108,7 @@
             dispatch_promise(^{
                 @throw @"1";
             }).catch(resolve);
-        }].always(^{
+        }].ensure(^{
             [ex1 fulfill];
             ex1Fulfilled = YES;
         });

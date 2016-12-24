@@ -29,11 +29,11 @@ class Test232: XCTestCase {
                     let sentinel = arc4random()
 
                     func xFactory() -> Promise<UInt32> {
-                        return Promise(value: sentinel)
+                        return Promise(sentinel)
                     }
 
                     testPromiseResolution(factory: xFactory) { promise, expectation in
-                        promise.then { value -> Void in
+                        promise.done { value in
                             XCTAssertEqual(value, sentinel)
                             expectation.fulfill()
                         }
@@ -51,7 +51,7 @@ class Test232: XCTestCase {
                     }
 
                     testPromiseResolution(factory: xFactory) { promise, expectation in
-                        promise.then { value -> Void in
+                        promise.done { value in
                             XCTAssertEqual(value, sentinel)
                             expectation.fulfill()
                         }
@@ -105,7 +105,7 @@ class Test232: XCTestCase {
 extension Test232 {
     fileprivate func testPromiseResolution(factory: @escaping () -> Promise<UInt32>, line: UInt = #line, test: (Promise<UInt32>, XCTestExpectation) -> Void) {
         specify("via return from a fulfilled promise", file: #file, line: line) { d, expectation in
-            let promise = Promise(value: arc4random()).then { _ in factory() }
+            let promise = Promise(arc4random()).then { _ in factory() }
             test(promise, expectation)
         }
         specify("via return from a rejected promise", file: #file, line: line) { d, expectation in
