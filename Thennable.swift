@@ -36,8 +36,8 @@ extension Thennable {
      - Important: The default queue is the main queue. If you therefore are already on the main queue, what will happen? The answer is: PromiseKit will *dispatch* so that your handler is executed at the next available queue runloop iteration. The reason for this is the phenomenon known as “Zalgo” in the promises community.
      - Remark: `Promise` generic type name chosen for clarity in compile error messages rather than clarity in our code.
      */
-    public func then<Promise: Chainable>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> Promise) -> PromiseKit.Promise<Promise.Value> {
-        let (rv, joint) = PromiseKit.Promise<Promise.Value>.pending()
+    public func then<Foo: Chainable>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> Foo) -> Promise<Foo.Value> {
+        let (rv, joint) = Promise<Foo.Value>.pending()
         state.then(on: q, else: joint.resolve) { value in
             let chained = try body(value).promise
             guard chained !== rv else { throw PMKError.returnedSelf }

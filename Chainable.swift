@@ -54,3 +54,14 @@ extension Optional where Wrapped: Promisey, Wrapped: Chainable {
         }
     }
 }
+
+extension ImplicitlyUnwrappedOptional where Wrapped: Promisey, Wrapped: Chainable {
+    public var promise: Wrapped {
+        switch self {
+        case .some(let value):
+            return value
+        case .none:
+            fatalError("Cannot figure this out")  //FIXME!
+        }
+    }
+}

@@ -61,15 +61,15 @@ class PromiseTests: XCTestCase {
     func testCustomStringConvertible() {
         let a = Promise<Void>.pending().promise   // isPending
         let b = Promise()                         // SealedState
-        let c = Promise<Void>(error: Error.dummy) // SealedState
+        let c = Promise<Int>(error: Error.dummy) // SealedState
         let d = Promise{ f, _ in f("myValue") }   // UnsealedState
         let e = Promise<Void>{ _, r in r(Error.dummy) }  // UnsealedState
 
-        XCTAssertEqual("\(a)", "Promise(.pending(handlers: 0))")
-        XCTAssertEqual("\(b)", "Promise(())")
-        XCTAssertEqual("\(c)", "Promise(Error.dummy)")
+        XCTAssertEqual("\(a)", "Promise<Void>(.pending(handlers: 0))")
+        XCTAssertEqual("\(b)", "Promise()")
+        XCTAssertEqual("\(c)", "Promise<Int>(Error.dummy)")
         XCTAssertEqual("\(d)", "Promise(myValue)")
-        XCTAssertEqual("\(e)", "Promise(Error.dummy)")
+        XCTAssertEqual("\(e)", "Promise<Void>(Error.dummy)")
     }
 }
 

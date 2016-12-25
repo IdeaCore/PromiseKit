@@ -1,7 +1,14 @@
 extension Promise: CustomStringConvertible {
     /// - Returns: A description of the state of this promise.
     public var description: String {
-        return "Promise(\(state))"
+        let isVoid = Value.self == Void.self
+        if isFulfilled {
+            let value = isVoid ? "" : "\(state)"
+            return "Promise(\(value))"
+        } else {
+            let type = isVoid ? "Void" : "\(Value.self)"
+            return "Promise<\(type)>(\(state))"
+        }
     }
 }
 

@@ -5,7 +5,7 @@ class Test231: XCTestCase {
     func test() {
         describe("2.3.1: If `promise` and `x` refer to the same object, reject `promise` with a `TypeError' as the reason.") {
             specify("via return from a fulfilled promise") { d, expectation in
-                var promise: Promise<Void>!
+                var promise: Promise<Int>!
                 promise = Promise().then { promise }
                 promise.catch { err in
                     if case PMKError.returnedSelf = err {
