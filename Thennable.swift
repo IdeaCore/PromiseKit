@@ -34,16 +34,14 @@ extension Thennable {
      - Parameter execute: The closure that executes when this promise fulfills.
      - Returns: A new promise that resolves once the promise returned by `execute` resolves.
      - Important: The default queue is the main queue. If you therefore are already on the main queue, what will happen? The answer is: PromiseKit will *dispatch* so that your handler is executed at the next available queue runloop iteration. The reason for this is the phenomenon known as “Zalgo” in the promises community.
-     - Remark: `PromiseType` generic type name chosen for clarity in compile error messages.
+     - Remark: `Promise` generic type name chosen for clarity in compile error messages rather than clarity in our code.
      */
     public func then<Promise: Chainable>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> Promise) -> PromiseKit.Promise<Promise.Value> {
-        var rv: PromiseKit.Promise<Promise.Value>!
-        rv = PromiseKit.Promise { resolve in
-            state.then(on: q, else: resolve) { value in
-                let chained = try body(value).promise
-                guard chained !== rv else { throw PMKError.returnedSelf }
-                chained.state.pipe(resolve)
-            }
+        let (rv, joint) = PromiseKit.Promise<Promise.Value>.pending()
+        state.then(on: q, else: joint.resolve) { value in
+            let chained = try body(value).promise
+            guard chained !== rv else { throw PMKError.returnedSelf }
+            chained.weld(to: joint)
         }
         return rv
     }

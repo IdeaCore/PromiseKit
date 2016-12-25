@@ -15,7 +15,7 @@ class Test231: XCTestCase {
             }
             specify("via return from a rejected promise") { d, expectation in
                 var promise: Promise<Void>!
-                promise = Promise(error: Error.dummy).recover { _ -> Promise<Void> in
+                promise = Promise(error: Error.dummy).recover { _ in
                     return promise
                 }
                 promise.catch { err in
