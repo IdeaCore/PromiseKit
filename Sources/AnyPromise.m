@@ -74,6 +74,16 @@ NSString *const PMKErrorDomain = @"PMKErrorDomain";
     return !self.pending;
 }
 
+- (id)value {
+    id obj = [self valueForKey:@"__value"];
+
+    if ([obj isKindOfClass:[PMKArray class]]) {
+        return obj[0];
+    } else {
+        return obj;
+    }
+}
+
 @end
 
 
@@ -110,16 +120,6 @@ NSString *const PMKErrorDomain = @"PMKErrorDomain";
             }
         });
     }];
-}
-
-- (id)value {
-    id obj = [self valueForKey:@"__value"];
-
-    if ([obj isKindOfClass:[PMKArray class]]) {
-        return obj[0];
-    } else {
-        return obj;
-    }
 }
 
 @end

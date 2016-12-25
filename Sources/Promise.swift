@@ -196,14 +196,14 @@ public final class Promise<Value>: Thennable {
         return done(on: zalgo) { _ in }
     }
 
-    public func recover<P: PromiseConvertible>(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> P) -> Promise where P.Value == Value {
-        let (promise2return, joint) = Promise.pending()
+    public func recover<ReturnType: PromiseConvertible>(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> ReturnType) -> Promise where ReturnType.Value == Value {
+        let (rv, joint) = Promise.pending()
         state.recover(on: q, policy: policy, else: joint.resolve) { error in
             let recovery = try body(error).promise
-            guard promise2return !== recovery else { throw PMKError.returnedSelf }
+            guard rv !== recovery else { throw PMKError.returnedSelf }
             recovery.weld(to: joint)
         }
-        return promise2return
+        return rv
     }
 
     public func recover(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> Void) -> Promise<Void> {
@@ -245,8 +245,8 @@ extension Promise where Value: Collection {
      - Parameter transform: The closure that executes when this promise resolves.
      - Returns: A new promise, resolved with this promise’s resolution.
      */
-    public func map<RV, P: PromiseConvertible>(on: DispatchQueue = .default, transform: @escaping (Value.Iterator.Element) throws -> P) -> Promise<[RV]> where P.Value == RV {
-        return Promise<[RV]> { resolve in
+    public func map<TransformType: PromiseConvertible>(on: DispatchQueue = .default, transform: @escaping (Value.Iterator.Element) throws -> TransformType) -> Promise<[TransformType.Value]> where TransformType.Value == Value {
+        return Promise<[TransformType.Value]> { resolve in
             return state.then(on: zalgo, else: resolve) { tt in
                 when(fulfilled: try tt.map{ try transform($0).promise }).state.pipe(resolve)
             }
@@ -259,28 +259,33 @@ extension Promise where Value: Collection {
 
  Compare:
 
-     NSURLSession.GET(url1).then {
-         NSURLSession.GET(url2)
+     NSURLSession.dataTask(url: url1).then {
+         URLSession.shared.dataTask(url: url2)
      }.then {
-         NSURLSession.GET(url3)
+         URLSession.shared.dataTask(url: url3)
      }
 
  With:
 
      firstly {
-         NSURLSession.GET(url1)
+         URLSession.shared.dataTask(url: url1)
      }.then {
-         NSURLSession.GET(url2)
+         URLSession.shared.dataTask(url: url2)
      }.then {
-         NSURLSession.GET(url3)
+         URLSession.shared.dataTask(url: url3)
      }
  */
-public func firstly<P: PromiseConvertible>(execute body: () throws -> P) -> Promise<P.Value> {
+public func firstly<ReturnType: PromiseConvertible>(execute body: () throws -> ReturnType) -> Promise<ReturnType.Value> {
     do {
         return try body().promise
     } catch {
         return Promise(error: error)
     }
+}
+
+/// - SeeAlso: `firstly`
+public func firstly<ReturnType: PromiseConvertible>(execute body: () -> ReturnType) -> Promise<ReturnType.Value> {
+    return body().promise
 }
 
 /**

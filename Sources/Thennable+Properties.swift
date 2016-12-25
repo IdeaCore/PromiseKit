@@ -1,4 +1,16 @@
 extension Thennable {
+    /// - Returns: The value with which this promise was fulfilled or `nil` if this promise is pending or rejected.
+    final public var value: Value? {
+        switch state.get() {
+        case .none:
+            return nil
+        case .some(.fulfilled(let value)):
+            return value
+        case .some(.rejected):
+            return nil
+        }
+    }
+
     /// - Returns: The error with which this promise was rejected; `nil` if this promise is not rejected.
     final public var error: Error? {
         switch state.get() {
@@ -8,6 +20,17 @@ extension Thennable {
             return nil
         case .some(.rejected(let error, _)):
             return error
+        }
+    }
+
+    final public var result: Result<Value>? {
+        switch state.get() {
+        case .none:
+            return nil
+        case .some(.fulfilled(let value)):
+            return .fulfilled(value)
+        case .some(.rejected(let error, _)):
+            return .rejected(error)
         }
     }
 
@@ -29,17 +52,5 @@ extension Thennable {
     /// - Returns: `true` if the promise was rejected.
     final public var isRejected: Bool {
         return error != nil
-    }
-
-    /// - Returns: The value with which this promise was fulfilled or `nil` if this promise is pending or rejected.
-    final public var value: Value? {
-        switch state.get() {
-        case .none:
-            return nil
-        case .some(.fulfilled(let value)):
-            return value
-        case .some(.rejected):
-            return nil
-        }
     }
 }

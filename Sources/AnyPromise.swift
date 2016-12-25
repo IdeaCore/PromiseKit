@@ -1,45 +1,31 @@
 /**
- AnyPromise is an Objective-C compatible promise.
+ AnyPromise is a promise designed for Objective-C.
 */
 @objc(AnyPromise) public final class AnyPromise: NSObject, Thennable {
+
     let state: State<Any?>
 
-    /// - Returns: A new `AnyPromise` bound to a `Promise<Any?>`.
-    public init<T>(_ bridge: Promise<T?>) {
-
-        // dirty, but safe and efficient
-
-        if bridge.state is UnsealedState {
-            state = unsafeBitCast(bridge.state, to: UnsealedState<Any?>.self)
-        } else {
-            state = unsafeBitCast(bridge.state, to: SealedState<Any?>.self)
+    /// - Returns: A new `AnyPromise` bound to a `Promise`.
+    public init<T>(_ bridge: Promise<T>) {
+        switch bridge.state.get() {
+        case .fulfilled(let value)?:
+            state = SealedState(resolution: .fulfilled(value))
+        case .rejected(let error, let token)?:
+            state = SealedState(resolution: .rejected(error, token))
+        case nil:
+            let promise: Promise<Any?> = bridge.then(on: zalgo){ Optional($0) }
+            state = promise.state
         }
     }
 
-    /// - Returns: A new `AnyPromise` bound to a `Promise<Any?>`.
-    public init<T>(_ bridge: Promise<T>) {
-        let promise: Promise<Any?> = bridge.then(on: zalgo){ Optional($0) }
-        state = promise.state
+    init(sealant: (@escaping (Resolution<Any?>) -> Void) -> Void) {
+        var resolve: ((Resolution<Any?>) -> Void)!
+        state = UnsealedState(resolver: &resolve)
+        sealant(resolve)
     }
 
-    /**
-     Bridges an `AnyPromise` to a `Promise<Any?>`.
-
-     - Note: AnyPromises fulfilled with `PMKManifold` lose all but the first fulfillment object.
-     - Remark: Could not make this an initializer of `Promise` due to generics issues.
-     */
-    public func asPromise() -> Promise<Any?> {
-        return Promise(sealant: { resolve in
-            state.pipe { resolution in
-                switch resolution {
-                case .rejected:
-                    resolve(resolution)
-                case .fulfilled:
-                    let obj = (self as AnyObject).value(forKey: "value")
-                    resolve(.fulfilled(obj))
-                }
-            }
-        })
+    private init(state: State<Any?>) {
+        self.state = state
     }
 
 //MARK: ObjC methods
@@ -88,10 +74,6 @@
         return AnyPromise(state: state)
     }
 
-    private init(state: State<Any?>) {
-        self.state = state
-    }
-
     /**
      Create a new promise that resolves with the provided block.
 
@@ -120,12 +102,6 @@
         })
     }
 
-    init(sealant: (@escaping (Resolution<Any?>) -> Void) -> Void) {
-        var resolve: ((Resolution<Any?>) -> Void)!
-        state = UnsealedState(resolver: &resolve)
-        sealant(resolve)
-    }
-
     @objc func __then(on q: DispatchQueue, execute body: @escaping (Any?) -> Any?) -> AnyPromise {
         return AnyPromise(sealant: { resolve in
             state.then(on: q, else: resolve, execute: makeHandler(body, resolve))
@@ -134,19 +110,13 @@
 
     @objc func __catch(withPolicy policy: CatchPolicy, execute body: @escaping (Any?) -> Any?) -> AnyPromise {
         return AnyPromise(sealant: { resolve in
-            state.catch(on: .default, policy: policy) { err in
-                makeHandler(body, resolve)(err as NSError)
-            }
+            state.recover(on: .default, policy: policy, else: resolve, execute: makeHandler(body, resolve))
         })
     }
 
     @objc func __ensure(on q: DispatchQueue, execute body: @escaping () -> Void) -> AnyPromise {
-        return AnyPromise(sealant: { resolve in
-            state.pipe(on: q) { resolution in
-                body()
-                resolve(resolution)
-            }
-        })
+        state.pipe(on: q) { _ in body() }
+        return self
     }
 
     /// used by PMKWhen and PMKJoin
@@ -160,16 +130,6 @@
                 body(value)
             }
         }
-    }
-}
-
-
-extension AnyPromise {
-    /**
-     - Returns: A description of the state of this promise.
-     */
-    override public var description: String {
-        return "AnyPromise(\(state))"
     }
 }
 

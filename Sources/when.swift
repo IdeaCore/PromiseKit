@@ -232,7 +232,7 @@ public func when<T>(resolved promises: Promise<T>...) -> Promise<[Result<T>]> {
     return when(resolved: promises)
 }
 
-/// Waits on all provided promises.
+/// - SeeAlso: when(resolved:)
 public func when<T>(resolved promises: [Promise<T>]) -> Promise<[Result<T>]> {
     guard !promises.isEmpty else { return Promise([]) }
 

@@ -21,16 +21,18 @@ class JoinTests: XCTestCase {
     }
     
     func testImmediateErrors() {
-        let errorPromise = Promise<Void>(error: NSError(domain: "", code: 0, userInfo: nil))
+        enum E: Error { case dummy }
+
+        let errorPromise = Promise<Void>(error: E.dummy)
         var joinFinished = false
-        when(resolved: errorPromise).recover(on: zalgo) { _ in joinFinished = true }
+        when(resolved: errorPromise).done(on: zalgo) { _ in joinFinished = true }
         XCTAssert(joinFinished, "Join immediately finishes on rejected promise")
         
-        let errorPromise2 = Promise<Void>(error: NSError(domain: "", code: 0, userInfo: nil))
-        let errorPromise3 = Promise<Void>(error: NSError(domain: "", code: 0, userInfo: nil))
-        let errorPromise4 = Promise<Void>(error: NSError(domain: "", code: 0, userInfo: nil))
+        let errorPromise2 = Promise<Void>(error: E.dummy)
+        let errorPromise3 = Promise<Void>(error: E.dummy)
+        let errorPromise4 = Promise<Void>(error: E.dummy)
         var join2Finished = false
-        when(resolved: errorPromise2, errorPromise3, errorPromise4).recover(on: zalgo) { _ in join2Finished = true }
+        when(resolved: errorPromise2, errorPromise3, errorPromise4).done(on: zalgo) { _ in join2Finished = true }
         XCTAssert(join2Finished, "Join immediately finishes on rejected promises")
     }
     

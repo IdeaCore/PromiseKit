@@ -24,64 +24,10 @@ public enum PMKError: Error {
     case whenConcurrentlyZero
 
     /** AnyPromise.toPromise failed to cast as requested */
-    case castError(Any.Type)
+    case cast(Any.Type)
+
+    case nilChainable
 }
-
-public enum PMKURLError: Error {
-    /**
-     The URLRequest succeeded but a valid UIImage could not be decoded from
-     the data that was received.
-     */
-    case invalidImageData(URLRequest, Data)
-
-    /**
-     The HTTP request returned a non-200 status code.
-     */
-    case badResponse(URLRequest, Data?, URLResponse?)
-
-    /**
-     The data could not be decoded using the encoding specified by the HTTP
-     response headers.
-     */
-    case stringEncoding(URLRequest, Data, URLResponse)
-
-    /**
-     Usually the `NSURLResponse` is actually an `NSHTTPURLResponse`, if so you
-     can access it using this property. Since it is returned as an unwrapped
-     optional: be sure.
-     */
-    public var NSHTTPURLResponse: Foundation.HTTPURLResponse! {
-        switch self {
-        case .invalidImageData:
-            return nil
-        case .badResponse(_, _, let rsp):
-            return rsp as! Foundation.HTTPURLResponse
-        case .stringEncoding(_, _, let rsp):
-            return rsp as! Foundation.HTTPURLResponse
-        }
-    }
-}
-
-extension PMKURLError: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case let .badResponse(rq, data, rsp):
-            if let data = data, let str = String(data: data, encoding: .utf8) {
-                return "PromiseKit: badResponse: \(rq): \(rsp)\n\(str)"
-            } else {
-                fallthrough
-            }
-        default:
-            return "\(self)"
-        }
-    }
-}
-
-public enum JSONError: Error {
-    /// The JSON response was different to that requested
-    case unexpectedRootNode(Any)
-}
-
 
 //////////////////////////////////////////////////////////// Cancellation
 
@@ -161,11 +107,7 @@ class ErrorConsumptionToken {
 
     deinit {
         if !consumed {
-#if os(Linux)
             PMKUnhandledErrorHandler(error)
-#else
-            PMKUnhandledErrorHandler(error as NSError)
-#endif
         }
     }
 }

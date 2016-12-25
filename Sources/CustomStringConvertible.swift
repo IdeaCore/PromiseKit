@@ -1,6 +1,14 @@
 extension Promise: CustomStringConvertible {
+    /// - Returns: A description of the state of this promise.
     public var description: String {
         return "Promise(\(state))"
+    }
+}
+
+extension AnyPromise {
+    /// - Returns: A description of the state of this promise.
+    override public var description: String {
+        return "AnyPromise(\(state))"
     }
 }
 

@@ -1,5 +1,9 @@
+//TODO name Chainable?
+
 public protocol PromiseConvertible {
     associatedtype Value
+
+    // convert this type into a `Promise`
     var promise: Promise<Value> { get }
 }
 
@@ -32,5 +36,16 @@ extension Optional: PromiseConvertible {
 }
 
 extension AnyPromise: PromiseConvertible {
-    public var promise: Promise<Any?> { return asPromise() }
+    public var promise: Promise<Any?> { return Promise(sealant: state.pipe) }
+}
+
+extension Optional where Wrapped: PromiseConvertible {
+    public var promise: Wrapped {
+        switch self {
+        case .some(let value):
+            return value
+        case .none:
+            fatalError("Cannot figure this out")  //FIXME!
+        }
+    }
 }
