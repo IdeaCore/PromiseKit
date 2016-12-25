@@ -199,28 +199,39 @@ public final class Promise<Value>: Thennable {
     public func asVoid() -> Promise<Void> {
         return done(on: zalgo) { _ in }
     }
+}
 
-    public func recover<ReturnType: PromiseConvertible>(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> ReturnType) -> Promise where ReturnType.Value == Value {
-        let (rv, joint) = Promise.pending()
-        state.recover(on: q, policy: policy, else: joint.resolve) { error in
-            let recovery = try body(error).promise
-            guard rv !== recovery else { throw PMKError.returnedSelf }
-            recovery.weld(to: joint)
-        }
-        return rv
-    }
+extension Promise where Value: Collection {
+    /**
+     Transforms a `Promise` where `T` is a `Collection` into a `Promise<[U]>`
+     
+         func download(urls: [String]) -> Promise<UIImage> {
+             //…
+         }
 
-    public func recover(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> Void) -> Promise<Void> {
-        return Promise<Void>(sealant: { resolve in
-            state.catch(on: q, policy: policy) { error in
-                do {
-                    try body(error)
-                    resolve(.fulfilled())
-                } catch {
-                    resolve(Resolution(error))
-                }
+         return URLSession.shared.dataTask(url: url).asArray().map(download)
+
+     Equivalent to:
+
+         func download(urls: [String]) -> Promise<UIImage> {
+             //…
+         }
+
+         return URLSession.shared.dataTask(url: url).then { urls in
+             return when(fulfilled: urls.map(download))
+         }
+
+
+     - Parameter on: The queue to which the provided closure dispatches.
+     - Parameter transform: The closure that executes when this promise resolves.
+     - Returns: A new promise, resolved with this promise’s resolution.
+     */
+    public func map<Transform: Chainable>(on: DispatchQueue = .default, transform: @escaping (Value.Iterator.Element) throws -> Transform) -> Promise<[Transform.Value]> where Transform.Value == Value {
+        return Promise<[Transform.Value]> { resolve in
+            return state.then(on: zalgo, else: resolve) { tt in
+                when(fulfilled: try tt.map{ try transform($0).promise }).state.pipe(resolve)
             }
-        })
+        }
     }
 }
 
@@ -245,7 +256,7 @@ public final class Promise<Value>: Thennable {
          URLSession.shared.dataTask(url: url3)
      }
  */
-public func firstly<ReturnType: PromiseConvertible>(execute body: () throws -> ReturnType) -> Promise<ReturnType.Value> {
+public func firstly<ReturnType: Chainable>(execute body: () throws -> ReturnType) -> Promise<ReturnType.Value> {
     do {
         return try body().promise
     } catch {
@@ -253,15 +264,10 @@ public func firstly<ReturnType: PromiseConvertible>(execute body: () throws -> R
     }
 }
 
-/// - SeeAlso: `firstly`
-public func firstly<ReturnType: PromiseConvertible>(execute body: () -> ReturnType) -> Promise<ReturnType.Value> {
-    return body().promise
-}
-
 /**
  - SeeAlso: `Promise.pending() -> (Promise, Joint)`
  - SeeAlso: `Promise.pipe`
  */
 public class Joint<T> {
-    fileprivate var resolve: ((Resolution<T>) -> Void)!
+    var resolve: ((Resolution<T>) -> Void)!
 }

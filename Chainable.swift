@@ -1,45 +1,50 @@
 //TODO name Chainable?
 
-public protocol PromiseConvertible {
+public protocol Chainable {
     associatedtype Value
 
     // convert this type into a `Promise`
     var promise: Promise<Value> { get }
 }
 
-extension Promise: PromiseConvertible {
+extension Promise: Chainable {
     public var promise: Promise { return self }
 }
 
-extension Bool: PromiseConvertible {
+extension Bool: Chainable {
     public var promise: Promise<Bool> { return Promise(self) }
 }
 
-extension Int: PromiseConvertible {
+extension Int: Chainable {
     public var promise: Promise<Int> { return Promise(self) }
 }
 
-extension UInt32: PromiseConvertible {
+extension UInt32: Chainable {
     public var promise: Promise<UInt32> { return Promise(self) }
 }
 
-extension String: PromiseConvertible {
+extension String: Chainable {
     public var promise: Promise<String> { return Promise(self) }
 }
 
-extension Data: PromiseConvertible {
+extension Data: Chainable {
     public var promise: Promise<Data> { return Promise(self) }
 }
 
-extension Optional: PromiseConvertible {
+extension Optional: Chainable {
     public var promise: Promise<Optional> { return Promise(self) }
 }
 
-extension AnyPromise: PromiseConvertible {
+extension AnyPromise: Chainable {
     public var promise: Promise<Any?> { return Promise(sealant: state.pipe) }
 }
 
-extension Optional where Wrapped: PromiseConvertible {
+//TODO sucks
+public protocol Promisey {}
+extension Promise: Promisey {}
+extension AnyPromise: Promisey {}
+
+extension Optional where Wrapped: Promisey, Wrapped: Chainable {
     public var promise: Wrapped {
         switch self {
         case .some(let value):

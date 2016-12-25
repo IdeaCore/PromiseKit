@@ -34,17 +34,17 @@ extension Thennable {
      - Parameter execute: The closure that executes when this promise fulfills.
      - Returns: A new promise that resolves once the promise returned by `execute` resolves.
      - Important: The default queue is the main queue. If you therefore are already on the main queue, what will happen? The answer is: PromiseKit will *dispatch* so that your handler is executed at the next available queue runloop iteration. The reason for this is the phenomenon known as “Zalgo” in the promises community.
-     - Remark: `ReturnPromise` name chosen for clarity in compile error messages.
+     - Remark: `PromiseType` generic type name chosen for clarity in compile error messages.
      */
-    public func then<ReturnPromise: PromiseConvertible, Return: Thennable>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> ReturnPromise) -> Return where Return.Value == ReturnPromise.Value {
-        var rv: Return!
-        rv = Return(sealant: { resolve in
+    public func then<Promise: Chainable>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> Promise) -> PromiseKit.Promise<Promise.Value> {
+        var rv: PromiseKit.Promise<Promise.Value>!
+        rv = PromiseKit.Promise { resolve in
             state.then(on: q, else: resolve) { value in
                 let promise = try body(value).promise
-                //guard promise !== rv else { throw PMKError.returnedSelf }
+                guard promise !== rv else { throw PMKError.returnedSelf }
                 promise.state.pipe(resolve)
             }
-        })
+        }
         return rv
     }
 
@@ -138,39 +138,42 @@ extension Thennable {
         state.pipe(on: q) { body(Result($0)) }
         return self
     }
-}
 
-
-extension Thennable where Value: Collection {
     /**
-     Transforms a `Promise` where `T` is a `Collection` into a `Promise<[U]>`
-
-     func download(urls: [String]) -> Promise<UIImage> {
-     //…
-     }
-
-     return URLSession.shared.dataTask(url: url).asArray().map(download)
-
-     Equivalent to:
-
-     func download(urls: [String]) -> Promise<UIImage> {
-     //…
-     }
-
-     return URLSession.shared.dataTask(url: url).then { urls in
-     return when(fulfilled: urls.map(download))
-     }
-
-
+     The provided closure executes when this promise rejects.
+     
+     Unlike `catch`, `recover` continues the chain provided the closure does not throw. Use `recover` in circumstances where recovering the chain from certain errors is a possibility. For example:
+     
+         CLLocationManager.promise().recover { error in
+             guard error == CLError.unknownLocation else { throw error }
+             return CLLocation.Chicago
+         }
      - Parameter on: The queue to which the provided closure dispatches.
-     - Parameter transform: The closure that executes when this promise resolves.
-     - Returns: A new promise, resolved with this promise’s resolution.
+     - Parameter policy: The default policy does not execute your handler for cancellation errors.
+     - Parameter execute: The handler to execute if this promise is rejected.
+     - SeeAlso: [Cancellation](http://promisekit.org/docs/)
      */
-    public func map<TransformType: PromiseConvertible>(on: DispatchQueue = .default, transform: @escaping (Value.Iterator.Element) throws -> TransformType) -> Promise<[TransformType.Value]> {
-        return Promise { resolve in
-            return state.then(on: zalgo, else: resolve) { tt in
-                when(fulfilled: try tt.map{ try transform($0).promise }).state.pipe(resolve)
-            }
+    public func recover<ReturnType: Chainable>(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> ReturnType) -> Promise<Value> where ReturnType.Value == Value {
+        let (rv, joint) = Promise<Value>.pending()
+        state.recover(on: q, policy: policy, else: joint.resolve) { error in
+            let recovery = try body(error).promise
+            guard rv !== recovery else { throw PMKError.returnedSelf }
+            recovery.weld(to: joint)
         }
+        return rv
+    }
+
+    /// - SeeAlso: `recover(on:policy:handler)
+    public func recover(on q: DispatchQueue = .default, policy: CatchPolicy = .allErrorsExceptCancellation, handler body: @escaping (Error) throws -> Void) -> Promise<Void> {
+        return Promise<Void>(sealant: { resolve in
+            state.catch(on: q, policy: policy) { error in
+                do {
+                    try body(error)
+                    resolve(.fulfilled())
+                } catch {
+                    resolve(Resolution(error))
+                }
+            }
+        })
     }
 }

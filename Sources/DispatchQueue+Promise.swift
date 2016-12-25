@@ -14,7 +14,7 @@ extension DispatchQueue {
      - Returns: A new promise resolved by the result of the provided closure.
      - SeeAlso: `DispatchQueue.async(group:qos:flags:execute:)`
      */
-    public final func promise<P: PromiseConvertible>(group: DispatchGroup? = nil, qos: DispatchQoS = .default, flags: DispatchWorkItemFlags = [], execute body: @escaping () throws -> P) -> Promise<P.Value> {
+    public final func promise<ReturnType: Chainable>(group: DispatchGroup? = nil, qos: DispatchQoS = .default, flags: DispatchWorkItemFlags = [], execute body: @escaping () throws -> ReturnType) -> Promise<ReturnType.Value> {
 
         return Promise(sealant: { resolve in
             async(group: group, qos: qos, flags: flags) {
