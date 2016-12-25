@@ -33,7 +33,7 @@ class Test232: XCTestCase {
                     }
 
                     testPromiseResolution(factory: xFactory) { promise, expectation in
-                        promise.done { value in
+                        promise.then { value in
                             XCTAssertEqual(value, sentinel)
                             expectation.fulfill()
                         }
@@ -51,7 +51,7 @@ class Test232: XCTestCase {
                     }
 
                     testPromiseResolution(factory: xFactory) { promise, expectation in
-                        promise.done { value in
+                        promise.then { value in
                             XCTAssertEqual(value, sentinel)
                             expectation.fulfill()
                         }

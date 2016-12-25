@@ -68,7 +68,7 @@ class ErrorUnhandlerTests: XCTestCase {
             }
             promise.recover { error -> Int in
                 throw error
-            }.done { _ in
+            }.then { _ in
                 XCTFail()
             }.ensure {
                 ex1.fulfill()
@@ -94,8 +94,8 @@ class ErrorUnhandlerTests: XCTestCase {
         let ex3 = expectation(description: "")
         let ex4 = expectation(description: "")
 
-        after(interval: 0.10).done { r(Error.test); ex1.fulfill() }
-        after(interval: 0.15).done { r(Error.test); ex2.fulfill() }.ensure(that: ex3.fulfill)
+        after(interval: 0.10).then { r(Error.test); ex1.fulfill() }
+        after(interval: 0.15).then { r(Error.test); ex2.fulfill() }.ensure(that: ex3.fulfill)
 
         p.catch { error in
             ex4.fulfill()
@@ -116,7 +116,7 @@ class ErrorUnhandlerTests: XCTestCase {
         }
 
         Promise<Void> { _, reject in
-            after(interval: 0.1).done {
+            after(interval: 0.1).then {
                 throw Error.test
             }.catch(handler: reject)
         }

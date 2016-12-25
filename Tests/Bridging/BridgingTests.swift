@@ -69,7 +69,7 @@ class BridgingTests: XCTestCase {
             Promise(1)
         }.then { _ -> AnyPromise in
             return PromiseBridgeHelper().value(forKey: "bridge2") as! AnyPromise
-        }.done { value in
+        }.then { value in
             XCTAssertEqual(123, value as? Int)
             ex.fulfill()
         }
@@ -80,7 +80,7 @@ class BridgingTests: XCTestCase {
     func testCanThenOffAnyPromise() {
         let ex = expectation(description: "")
 
-        PMKDummyAnyPromise_YES().done { obj in
+        PMKDummyAnyPromise_YES().then { obj in
             if let value = obj as? NSNumber {
                 XCTAssertEqual(value, NSNumber(value: true))
                 ex.fulfill()
@@ -93,7 +93,7 @@ class BridgingTests: XCTestCase {
     func testCanThenOffManifoldAnyPromise() {
         let ex = expectation(description: "")
 
-        PMKDummyAnyPromise_Manifold().done { obj in
+        PMKDummyAnyPromise_Manifold().then { obj in
             guard let value = obj as? Bool else { return XCTFail() }
             XCTAssertEqual(value, true)
             ex.fulfill()
@@ -105,7 +105,7 @@ class BridgingTests: XCTestCase {
     func testCanAlwaysOffAnyPromise() {
         let ex = expectation(description: "")
 
-        PMKDummyAnyPromise_YES().done { obj in
+        PMKDummyAnyPromise_YES().then { obj in
             ex.fulfill()
         }
 
@@ -126,7 +126,7 @@ class BridgingTests: XCTestCase {
             PMKDummyAnyPromise_Error()
         }
 
-        p.done { obj in
+        p.then { obj in
             print(obj)
             XCTFail()
         }.catch { error in
@@ -139,7 +139,7 @@ class BridgingTests: XCTestCase {
         let ex = expectation(description: "")
         firstly {
             PMKDummyAnyPromise_YES()
-        }.done { _ in
+        }.then { _ in
             ex.fulfill()
         }
         waitForExpectations(timeout: 1)
@@ -155,7 +155,7 @@ class BridgingTests: XCTestCase {
         AnyPromise(input).then { obj -> Int in
             XCTAssertEqual(obj as? Int, 1)
             return 2
-        }.done { value in
+        }.then { value in
             XCTAssertEqual(value, 2)
             ex.fulfill()
         }
@@ -173,7 +173,7 @@ class BridgingTests: XCTestCase {
         AnyPromise(input).then { obj -> AnyPromise in
             XCTAssertEqual(obj as? Int, 1)
             return AnyPromise(after(interval: 0).then{ 2 })
-        }.done { obj  in
+        }.then { obj  in
             XCTAssertEqual(obj as? Int, 2)
             ex.fulfill()
         }
@@ -191,7 +191,7 @@ class BridgingTests: XCTestCase {
         AnyPromise(input).then { obj -> Promise<Int> in
             XCTAssertEqual(obj as? Int, 1)
             return after(interval: 0).then{ 2 }
-        }.done { value in
+        }.then { value in
             XCTAssertEqual(value, 2)
             ex.fulfill()
         }
@@ -205,7 +205,7 @@ class BridgingTests: XCTestCase {
         let ex = expectation(description: "")
         Promise(1).then { _ -> AnyPromise in
             return AnyPromise(after(interval: 0).then{ 1 })
-        }.done { x in
+        }.then { x in
             XCTAssertEqual(x as? Int, 1)
             ex.fulfill()
         }
@@ -217,7 +217,7 @@ class BridgingTests: XCTestCase {
         let ex = expectation(description: "")
 
         Promise(1).then { _ -> AnyPromise in
-            let promise = after(interval: 0.1).done{ throw Error.dummy }
+            let promise = after(interval: 0.1).then{ throw Error.dummy }
             return AnyPromise(promise)
         }.catch { err in
             ex.fulfill()

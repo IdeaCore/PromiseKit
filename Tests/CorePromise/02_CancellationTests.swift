@@ -13,9 +13,9 @@ class CancellationTests: XCTestCase {
                 ex1.fulfill()
             }
 
-            after(interval: 0).done {
+            after(interval: 0).then {
                 throw Error.cancel
-            }.done {
+            }.then {
                 XCTFail()
             }.catch { _ in
                 XCTFail()
@@ -28,9 +28,9 @@ class CancellationTests: XCTestCase {
     func testThrowCancellableErrorThatIsNotCancelled() {
         let expct = expectation(description: "")
 
-        after(interval: 0).done {
+        after(interval: 0).then {
             throw Error.dummy
-        }.done {
+        }.then {
             XCTFail()
         }.catch { _ in
             expct.fulfill()
@@ -49,13 +49,13 @@ class CancellationTests: XCTestCase {
                 ex2.fulfill()
             }
 
-            after(interval: 0).done {
+            after(interval: 0).then {
                 throw NSError(domain: PMKErrorDomain, code: PMKOperationCancelled, userInfo: nil)
             }.recover(policy: .allErrors) { err -> Promise<Void> in
                 ex1.fulfill()
                 XCTAssertTrue(err.isCancelledError)
                 throw err
-            }.done {
+            }.then {
                 XCTFail()
             }.catch { _ in
                 XCTFail()
@@ -68,7 +68,7 @@ class CancellationTests: XCTestCase {
     func testCatchCancellation() {
         let ex = expectation(description: "")
 
-        after(interval: 0).done {
+        after(interval: 0).then {
             throw NSError(domain: PMKErrorDomain, code: PMKOperationCancelled, userInfo: nil)
         }.catch(policy: .allErrors) { err in
             ex.fulfill()
@@ -85,7 +85,7 @@ class CancellationTests: XCTestCase {
             ex.fulfill()
         }
 
-        Promise().done {
+        Promise().then {
             throw NSError(domain: NSURLErrorDomain, code: URLError.cancelled.rawValue)
         }.catch { _ in
             XCTFail()
@@ -102,7 +102,7 @@ class CancellationTests: XCTestCase {
             ex.fulfill()
         }
 
-        Promise().done {
+        Promise().then {
             throw NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled, userInfo: [:])
         }.catch { _ in
             XCTFail()
@@ -119,7 +119,7 @@ class CancellationTests: XCTestCase {
             ex.fulfill()
         }
 
-        Promise().done {
+        Promise().then {
             throw Error.cancel as NSError
         }.catch { _ in
             XCTFail()

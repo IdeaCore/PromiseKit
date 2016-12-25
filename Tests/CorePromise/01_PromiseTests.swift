@@ -36,7 +36,7 @@ class PromiseTests: XCTestCase {
         DispatchQueue.global().promise { _ -> Int in
             XCTAssertFalse(Thread.isMainThread)
             return 1
-        }.done { one in
+        }.then { one in
             XCTAssertEqual(one, 1)
             ex.fulfill()
         }
@@ -49,7 +49,7 @@ class PromiseTests: XCTestCase {
 
         DispatchQueue.global().promise { _ -> Int in
             throw Error.dummy
-        }.done { _ in
+        }.then { _ in
             XCTFail()
         }.catch { _ in
             ex.fulfill()

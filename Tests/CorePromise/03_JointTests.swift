@@ -30,7 +30,7 @@ class JointTests: XCTestCase {
         let ex = expectation(description: "")
 
         let (promise, joint) = Promise<Void>.pending()
-        promise.done { ex.fulfill() }
+        promise.then { ex.fulfill() }
 
         Promise().weld(to: joint)
 
@@ -41,7 +41,7 @@ class JointTests: XCTestCase {
         let ex = expectation(description: "")
 
         let (promise, joint) = Promise<Void>.pending()
-        promise.done { ex.fulfill() }
+        promise.then { ex.fulfill() }
 
         let (foo, fulfillFoo, _) = Promise<Void>.pending()
         foo.weld(to: joint)

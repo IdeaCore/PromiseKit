@@ -4,7 +4,7 @@ import PromiseKit
 class ZalgoTests: XCTestCase {
     func test1() {
         var resolved = false
-        Promise(1).done(on: zalgo) { _ in
+        Promise(1).then(on: zalgo) { _ in
             resolved = true
         }
         XCTAssertTrue(resolved)
@@ -19,7 +19,7 @@ class ZalgoTests: XCTestCase {
         var x = 0
         
         let (p2, f, _) = Promise<Int>.pending()
-        p2.done(on: zalgo) { _ in
+        p2.then(on: zalgo) { _ in
             x = 1
         }
         XCTAssertEqual(x, 0)

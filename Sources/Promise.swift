@@ -197,7 +197,7 @@ public final class Promise<Value>: Thennable {
      - SeeAlso: when.swift contains enlightening examples of using `Promise<Void>` to simplify your code.
      */
     public func asVoid() -> Promise<Void> {
-        return done(on: zalgo) { _ in }
+        return then(on: zalgo) { _ in }
     }
 }
 

@@ -40,9 +40,9 @@ extension Thennable {
         var rv: PromiseKit.Promise<Promise.Value>!
         rv = PromiseKit.Promise { resolve in
             state.then(on: q, else: resolve) { value in
-                let promise = try body(value).promise
-                guard promise !== rv else { throw PMKError.returnedSelf }
-                promise.state.pipe(resolve)
+                let chained = try body(value).promise
+                guard chained !== rv else { throw PMKError.returnedSelf }
+                chained.state.pipe(resolve)
             }
         }
         return rv
@@ -54,7 +54,7 @@ extension Thennable {
       - Returns: A `Promise<Void>` that fulfills once your closure returns.
       - Remark: This function only exists because Swift, as yet, does not allow protocol extension to `Void`, thus in order to prevent complexity to `then` (we are not afraid of complexity in our sources, but are in fact afraid of less usability for you (closure return types are less easily inferred by the compiler) and due to persisting issues with the Swift compiler returning *incorrect* errors when it involves a closure, thus misleading error messages. Thus you have to decide between this and `then` actively :(
     */
-    public func done(on q: DispatchQueue = .default, _ body: @escaping (Value) throws -> Void) -> Promise<Void> {
+    public func then(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> Void) -> Promise<Void> {
         return Promise<Void> { resolve in
             state.then(on: q, else: resolve) { value in
                 try body(value)

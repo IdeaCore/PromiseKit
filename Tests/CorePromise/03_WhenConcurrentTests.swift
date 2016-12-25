@@ -20,7 +20,7 @@ class WhenConcurrentTestCase_Swift: XCTestCase {
         }
 
         when(fulfilled: generator, concurrently: 5)
-            .done { numbers in
+            .then { numbers in
                 if numbers == squareNumbers {
                     e.fulfill()
                 }
@@ -37,7 +37,7 @@ class WhenConcurrentTestCase_Swift: XCTestCase {
         }
 
         when(fulfilled: generator, concurrently: 5)
-            .done { numbers in
+            .then { numbers in
                 if numbers.count == 0 {
                     e.fulfill()
                 }
@@ -110,7 +110,7 @@ class WhenConcurrentTestCase_Swift: XCTestCase {
         }
 
         when(fulfilled: generator, concurrently: expectedConcurrently)
-            .done { numbers in
+            .then { numbers in
                 if expectedConcurrently == maxConcurrently {
                     e.fulfill()
                 }
@@ -155,7 +155,7 @@ class WhenConcurrentTestCase_Swift: XCTestCase {
             }
         }
 
-        when(fulfilled: generator, concurrently: 1).done {
+        when(fulfilled: generator, concurrently: 1).then {
             XCTFail("\($0)")
         }.catch { error in
             ex.fulfill()
