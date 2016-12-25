@@ -71,6 +71,9 @@ public final class Promise<Value>: Thennable {
              guard let url = /**/ else { throw Error.badUrl }
              return URLSession.shared.dataTask(url: url)
          }
+     
+     - Remark: `return` was chosen rather than passing in a `pipe` function since you cannot forget to `return`.
+
      */
     public init(weld body: () throws -> Promise) {
         do {
@@ -170,7 +173,8 @@ public final class Promise<Value>: Thennable {
 
      - Note: Usually this utility seems both opaque and strange… until you need it that is.
      - Returns: A new promise and its `Joint`.
-     - SeeAlso: `Promise.weld(_:)`
+     - SeeAlso: `weld(to:)`
+     - Remark: This may seem convoluted, why not just allow any promise to adopt the state of another with an instance function? Because that allows responsibility for tasks to escape, any third party library, other module or co-worker could interfere with *your* tasks.
      */
     public final class func pending() -> (Promise<Value>, Joint<Value>) {
         let pipe = Joint<Value>()
@@ -181,7 +185,7 @@ public final class Promise<Value>: Thennable {
     /**
      Pipes the value of this promise to the promise created with the joint.
 
-     - Parameter joint: The joint on which to join.
+     - Parameter to: The joint that we are ”welded” to; its promise adopts our state.
      - SeeAlso: `pending() -> (Promise, Joint)`
      */
     public func weld(to joint: Joint<Value>) {
@@ -217,40 +221,6 @@ public final class Promise<Value>: Thennable {
                 }
             }
         })
-    }
-}
-
-extension Promise where Value: Collection {
-    /**
-     Transforms a `Promise` where `T` is a `Collection` into a `Promise<[U]>`
-     
-         func download(urls: [String]) -> Promise<UIImage> {
-             //…
-         }
-
-         return URLSession.shared.dataTask(url: url).asArray().map(download)
-
-     Equivalent to:
-
-         func download(urls: [String]) -> Promise<UIImage> {
-             //…
-         }
-
-         return URLSession.shared.dataTask(url: url).then { urls in
-             return when(fulfilled: urls.map(download))
-         }
-
-
-     - Parameter on: The queue to which the provided closure dispatches.
-     - Parameter transform: The closure that executes when this promise resolves.
-     - Returns: A new promise, resolved with this promise’s resolution.
-     */
-    public func map<TransformType: PromiseConvertible>(on: DispatchQueue = .default, transform: @escaping (Value.Iterator.Element) throws -> TransformType) -> Promise<[TransformType.Value]> where TransformType.Value == Value {
-        return Promise<[TransformType.Value]> { resolve in
-            return state.then(on: zalgo, else: resolve) { tt in
-                when(fulfilled: try tt.map{ try transform($0).promise }).state.pipe(resolve)
-            }
-        }
     }
 }
 

@@ -36,15 +36,15 @@ extension Thennable {
      - Important: The default queue is the main queue. If you therefore are already on the main queue, what will happen? The answer is: PromiseKit will *dispatch* so that your handler is executed at the next available queue runloop iteration. The reason for this is the phenomenon known as “Zalgo” in the promises community.
      - Remark: `ReturnPromise` name chosen for clarity in compile error messages.
      */
-    public func then<ReturnPromise: PromiseConvertible>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> ReturnPromise) -> Promise<ReturnPromise.Value> {
-        var rv: Promise<ReturnPromise.Value>!
-        rv = Promise<ReturnPromise.Value> { resolve in
+    public func then<ReturnPromise: PromiseConvertible, Return: Thennable>(on q: DispatchQueue = .default, execute body: @escaping (Value) throws -> ReturnPromise) -> Return where Return.Value == ReturnPromise.Value {
+        var rv: Return!
+        rv = Return(sealant: { resolve in
             state.then(on: q, else: resolve) { value in
                 let promise = try body(value).promise
-                guard promise !== rv else { throw PMKError.returnedSelf }
+                //guard promise !== rv else { throw PMKError.returnedSelf }
                 promise.state.pipe(resolve)
             }
-        }
+        })
         return rv
     }
 
@@ -137,5 +137,40 @@ extension Thennable {
     public func tap(on q: DispatchQueue = .default, _ body: @escaping (Result<Value>) -> Void = { print("PromiseKit:", $0) }) -> Self {
         state.pipe(on: q) { body(Result($0)) }
         return self
+    }
+}
+
+
+extension Thennable where Value: Collection {
+    /**
+     Transforms a `Promise` where `T` is a `Collection` into a `Promise<[U]>`
+
+     func download(urls: [String]) -> Promise<UIImage> {
+     //…
+     }
+
+     return URLSession.shared.dataTask(url: url).asArray().map(download)
+
+     Equivalent to:
+
+     func download(urls: [String]) -> Promise<UIImage> {
+     //…
+     }
+
+     return URLSession.shared.dataTask(url: url).then { urls in
+     return when(fulfilled: urls.map(download))
+     }
+
+
+     - Parameter on: The queue to which the provided closure dispatches.
+     - Parameter transform: The closure that executes when this promise resolves.
+     - Returns: A new promise, resolved with this promise’s resolution.
+     */
+    public func map<TransformType: PromiseConvertible>(on: DispatchQueue = .default, transform: @escaping (Value.Iterator.Element) throws -> TransformType) -> Promise<[TransformType.Value]> {
+        return Promise { resolve in
+            return state.then(on: zalgo, else: resolve) { tt in
+                when(fulfilled: try tt.map{ try transform($0).promise }).state.pipe(resolve)
+            }
+        }
     }
 }

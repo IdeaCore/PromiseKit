@@ -13,8 +13,7 @@
         case .rejected(let error, let token)?:
             state = SealedState(resolution: .rejected(error, token))
         case nil:
-            let promise: Promise<Any?> = bridge.then(on: zalgo){ Optional($0) }
-            state = promise.state
+            state = bridge.then(on: zalgo){ Optional($0 as Any) }.state
         }
     }
 
